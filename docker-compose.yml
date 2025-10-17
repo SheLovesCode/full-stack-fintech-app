@@ -1,10 +1,11 @@
+version: '3.8'
 services:
   postgres:
     image: postgres:13
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: txn_db
+      POSTGRES_DB: fintech_db
     ports:
       - "5432:5432"
     volumes:
@@ -15,7 +16,9 @@ services:
   backend:
     build: ./backend
     ports:
-      - "4000:4000"
+      - "4000:8000"
+    env_file:
+      - ./backend/.env
     depends_on:
       - postgres
     networks:
@@ -24,18 +27,6 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    networks:
-      - appnetwork
-
-  nginx:
-    image: nginx:latest
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "80:80"
     depends_on:
