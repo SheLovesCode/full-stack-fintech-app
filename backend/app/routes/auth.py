@@ -6,8 +6,14 @@ import secrets
 import urllib.parse
 import urllib.parse
 import httpx
-from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi.responses import JSONResponse
+from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
+from app.services import crud
+from app.db.database import get_db
+
+router = APIRouter()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -55,14 +61,18 @@ def login_google(request: Request):
     return RedirectResponse(url)
 
 @router.get("/google/callback")
-async def google_callback(request: Request, code: str = None, state: str = None):
+async def google_callback(
+    request: Request,
+    code: str = None,
+    state: str = None,
+    db: Session = Depends(get_db)
+):
     session_state = request.session.get("state") if hasattr(request, "session") else None
     if state != session_state:
         raise HTTPException(status_code=400, detail="Invalid state parameter")
 
     code_verifier = request.session.get("code_verifier") if hasattr(request, "session") else None
 
-    # Exchange code for tokens
     token_url = "https://oauth2.googleapis.com/token"
     data = {
         "client_id": GOOGLE_CLIENT_ID,
@@ -72,7 +82,6 @@ async def google_callback(request: Request, code: str = None, state: str = None)
         "redirect_uri": REDIRECT_URI,
         "code_verifier": code_verifier,
     }
-
 
     async with httpx.AsyncClient() as client:
         token_response = await client.post(token_url, data=data)
@@ -87,5 +96,13 @@ async def google_callback(request: Request, code: str = None, state: str = None)
         userinfo_response = await client.get(userinfo_url, headers=headers)
         userinfo = userinfo_response.json()
 
-    return JSONResponse({"tokens": token_json, "user": userinfo})
+    try:
+        crud.get_or_create_user(db=db, google_profile=userinfo)
+        print("Successfully saved user")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    access_token = token_json["access_token"]
+
+    return JSONResponse({"access_token": access_token, "token_type": "Bearer"})
 

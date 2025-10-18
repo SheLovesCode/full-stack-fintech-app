@@ -1,4 +1,4 @@
-version: '3.8'
+# TODO: Move environment variables to env
 services:
   postgres:
     image: postgres:13
@@ -6,6 +6,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
       POSTGRES_DB: fintech_db
+#      POSTGRES_HOST: postgres
     ports:
       - "5432:5432"
     volumes:
@@ -15,6 +16,7 @@ services:
 
   backend:
     build: ./backend
+    restart: unless-stopped
     ports:
       - "4000:8000"
     env_file:
