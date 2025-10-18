@@ -1,9 +1,19 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY frontend/package.json frontend/package-lock.json ./
+
+# Copy package.json first
+COPY frontend/package*.json ./
+
+
+# Install dependencies
 RUN npm install
+
+# Copy the rest of the frontend code
 COPY frontend/ ./
+
+# Build the project
 RUN npm run build
+
 
 # Stage 2: Serve with NGINX
 FROM nginx:alpine

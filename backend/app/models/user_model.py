@@ -1,5 +1,6 @@
 # app/models/user_model.py
 from sqlalchemy import Column, Integer, String, DateTime, Index
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
 
@@ -14,5 +15,6 @@ class User(Base):
     profile_pic_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    payouts = relationship("Payout", back_populates="owner")
 
 Index('ix_oauth_id', User.oauth_id, unique=True)

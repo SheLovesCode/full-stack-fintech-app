@@ -24,7 +24,7 @@ class Payout(Base):
     status = Column(enum.Enum(PayoutStatus), nullable=False)
     user_id = Column(Integer, foreign_key="user.id", nullable=False)
     # description = Column(String(255), nullable=False)
-    owner=relationship("User", backref="payouts")
+    owner=relationship("User", back_populates="payouts")
 
 
 

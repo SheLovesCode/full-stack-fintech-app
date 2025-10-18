@@ -3,15 +3,15 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from starlette.middleware.sessions import SessionMiddleware
 import os
-from app.db.database import Base, engine
+from app.db import database
 
 load_dotenv()
-from app.routes import auth
+from app.routes import users
 
 app = FastAPI(title="Diana's Fullstack Fintech App")
-app.include_router(auth.router)
+app.include_router(users.router)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))
-Base.metadata.create_all(bind=engine)
+database.Base.metadata.create_all(bind=database.engine)
 
 @app.get("/")
 def root():
