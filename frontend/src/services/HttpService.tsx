@@ -1,24 +1,26 @@
 import axios from 'axios';
-import API_URL from '../config/Config.tsx';
+import API_URL from '../config/Config';
 import { UserProfile } from '../types/User';
 import { ExistingPayout, NewPayout } from '../types/Payout';
 import { PaginationParams, PaginatedResponse, ApiResponse, ApiError } from '../types/General';
 
-const httpService = {
-  // --- AUTH ---
-  login: async (
-      provider: 'google' | 'github',
-      code: string,
-      state: string
-  ): Promise<UserProfile> => {
+export const httpService = {
+  loginWithGoogle: async (): Promise<void> => {
     try {
-      const response = await axios.post<ApiResponse<UserProfile>>(
-          `${API_URL}/auth/oauth/${provider}`,
-          { code, state }
-      );
-      return response.data.data;
+      // Call backend /auth/login to get redirect URL
+      const response = await axios.get(`${API_URL}/auth/login`, {
+        maxRedirects: 0, // prevent axios from automatically following redirects
+        validateStatus: (status) => status === 302, // only treat 302 as valid
+      });
+
+      // The backend responds with a 302 redirect to Google's OAuth page
+      const redirectUrl = response.headers['location'];
+      if (!redirectUrl) throw new Error('No redirect URL from backend');
+
+      // Redirect the browser to Google
+      window.location.href = redirectUrl;
     } catch (err: any) {
-      console.error('Error logging in via OAuth:', err.response?.data || err.message);
+      console.error('Error initiating Google login:', err.response?.data || err.message);
       throw err as ApiError;
     }
   },

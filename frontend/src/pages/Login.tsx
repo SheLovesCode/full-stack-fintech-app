@@ -1,9 +1,10 @@
 import React from "react";
 import "./Login.css";
+import httpService from "../services/HttpService";
 
 const LoginPage: React.FC = () => {
-    const handleGoogleLogin = () => {
-        window.location.href = "http://localhost:8000/auth/google";
+    const handleGoogleLogin = async () => {
+        window.location.href = "/auth/login";
     };
 
     return (

@@ -1,3 +1,3 @@
-const API_URL = 'http://localhost/transactions';
+const API_URL = '';
 
 export default API_URL;
