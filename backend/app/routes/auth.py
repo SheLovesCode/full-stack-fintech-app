@@ -5,21 +5,25 @@ import os
 import secrets
 import urllib.parse
 import urllib.parse
-import httpx
 from fastapi import APIRouter, Request, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
 from app.services import crud
 from app.db.database import get_db
-
-router = APIRouter()
+import httpx
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
+from app.db.database import get_db
+from app.services import crud
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+security = HTTPBearer()
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("GOOGLE_AUTH_REDIRECT_URI")
+GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 
 def generate_pkce():
@@ -105,4 +109,32 @@ async def google_callback(
     access_token = token_json["access_token"]
 
     return JSONResponse({"access_token": access_token, "token_type": "Bearer"})
+
+
+async def get_current_user(
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+        db: Session = Depends(get_db),
+):
+    token = credentials.credentials
+
+    # Verify token with Google
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(GOOGLE_USERINFO_URL, headers={"Authorization": f"Bearer {token}"})
+
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+
+    userinfo = resp.json()
+
+    user = crud.get_or_create_user(db=db, google_profile=userinfo)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+
+    return user
 
