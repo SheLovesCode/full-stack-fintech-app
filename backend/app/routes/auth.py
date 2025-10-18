@@ -23,6 +23,7 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("GOOGLE_AUTH_REDIRECT_URI")
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
+print(REDIRECT_URI)
 
 
 # --- Step 1: PKCE generation ---

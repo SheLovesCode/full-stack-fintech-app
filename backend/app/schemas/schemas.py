@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from models.payout_model import PayoutStatus
+from app.models.payout_model import PayoutStatus
 
 
 class UserPublic(BaseModel):

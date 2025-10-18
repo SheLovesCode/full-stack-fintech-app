@@ -6,10 +6,12 @@ import os
 from app.db import database
 
 load_dotenv()
-from app.routes import users
+from app.routes import users, webhooks, payouts
 
 app = FastAPI(title="Diana's Fullstack Fintech App")
 app.include_router(users.router)
+app.include_router(webhooks.router)
+app.include_router(payouts.router)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))
 database.Base.metadata.create_all(bind=database.engine)
 
