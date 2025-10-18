@@ -17,10 +17,14 @@ REDIRECT_URI = os.getenv("GOOGLE_AUTH_REDIRECT_URI")
 
 
 def generate_pkce():
-    code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode("utf-8")
+    # Generate a code_verifier: between 43 and 128 chars, URL-safe, no padding
+    code_verifier = base64.urlsafe_b64encode(os.urandom(64)).decode("utf-8").rstrip("=")
+
+    # Create a SHA256 hash, then base64url encode it, again stripping padding
     code_challenge = base64.urlsafe_b64encode(
-        hashlib.sha256(code_verifier.encode()).digest()
-    ).rstrip(b"=").decode("utf-8")
+        hashlib.sha256(code_verifier.encode("utf-8")).digest()
+    ).decode("utf-8").rstrip("=")
+
     return code_verifier, code_challenge
 
 
@@ -47,11 +51,11 @@ def login_google(request: Request):
         "prompt": "consent"
     }
     url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+    print(url)
     return RedirectResponse(url)
 
 @router.get("/google/callback")
 async def google_callback(request: Request, code: str = None, state: str = None):
-    # Verify state to protect against CSRF
     session_state = request.session.get("state") if hasattr(request, "session") else None
     if state != session_state:
         raise HTTPException(status_code=400, detail="Invalid state parameter")
@@ -69,6 +73,7 @@ async def google_callback(request: Request, code: str = None, state: str = None)
         "code_verifier": code_verifier,
     }
 
+
     async with httpx.AsyncClient() as client:
         token_response = await client.post(token_url, data=data)
         token_json = token_response.json()
@@ -76,7 +81,6 @@ async def google_callback(request: Request, code: str = None, state: str = None)
     if "error" in token_json:
         raise HTTPException(status_code=400, detail=token_json["error"])
 
-    # Optionally, fetch user info
     userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
     headers = {"Authorization": f"Bearer {token_json['access_token']}"}
     async with httpx.AsyncClient() as client:
